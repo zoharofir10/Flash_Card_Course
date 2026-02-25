@@ -1,0 +1,36 @@
+---
+alwaysApply: true
+---
+# Drizzle Database Rule
+
+All database access must go through **Drizzle ORM** using the project schema and the shared `db` client. Do not use raw SQL, Prisma, or other ORMs.
+
+## Required usage
+
+- **Client**: Import `db` from `@/db` or `@/lib/db`.
+- **Schema**: Import tables and relations from `@/db` or `@/db/schema` (e.g. `decks`, `cards`, `decksRelations`, `cardsRelations`).
+- **Queries**: Use Drizzle’s query API: `db.select()`, `db.insert()`, `db.update()`, `db.delete()`, with operators from `drizzle-orm` (e.g. `eq`, `and`, `desc`).
+
+## Examples
+
+```typescript
+// ✅ GOOD – schema + db from project
+import { db } from "@/db";
+import { decks, cards } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+const userDecks = await db.select().from(decks).where(eq(decks.userId, userId));
+await db.insert(cards).values({ deckId, front, back });
+```
+
+```typescript
+// ❌ BAD – raw SQL
+const result = await sql`SELECT * FROM decks WHERE user_id = ${userId}`;
+
+// ❌ BAD – table names as strings
+await db.execute("INSERT INTO cards (deck_id, front, back) VALUES (?, ?, ?)");
+```
+
+## Raw SQL
+
+If raw SQL is required, use Drizzle’s `sql` template tag from `drizzle-orm` and pass it through `db.execute()` or the appropriate Drizzle API. Prefer the schema-based query API whenever possible.

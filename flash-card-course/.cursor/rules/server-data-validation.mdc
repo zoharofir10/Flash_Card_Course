@@ -1,0 +1,89 @@
+---
+description: Server components for data retrieval, server actions for DB mutations, Zod validation
+alwaysApply: true
+---
+
+# Server Data & Validation
+
+Data access and mutations must follow a strict separation: **server components** for reads, **server actions** for writes. All validation uses **Zod** with explicit TypeScript types.
+
+## Rules
+
+- **Data retrieval**: Always perform reads (queries, fetching from DB) in **server components**. Do not fetch data in client components for initial load; use server components and pass data as props.
+- **Mutations**: All **inserts**, **updates**, and **deletes** to the database must be done via **server actions** (functions with `"use server"`). Do not mutate the database from API routes or client code directly.
+- **Validation**: Use **Zod** for all data validation. Validate any user input or data that crosses the client/server boundary.
+- **Server action inputs**: Data passed to server actions must be **validated with Zod** and must have an explicit **TypeScript type**. Do **not** use `FormData` as the type for server action parameters; use a typed object (e.g. from a Zod schema) and parse/validate with Zod inside the action.
+
+## Examples
+
+```typescript
+// ✅ GOOD – server component fetches data
+// app/decks/page.tsx (server component)
+import { db } from "@/db";
+import { decks } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { auth } from "@clerk/nextjs/server";
+
+export default async function DecksPage() {
+  const { userId } = await auth();
+  const userDecks = await db.query.decks.findMany({
+    where: eq(decks.userId, userId!),
+  });
+  return <DecksList decks={userDecks} />;
+}
+```
+
+```typescript
+// ✅ GOOD – server action with Zod-validated, typed input
+"use server";
+
+import { z } from "zod";
+import { db } from "@/db";
+import { decks } from "@/db/schema";
+
+const createDeckSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+});
+
+type CreateDeckInput = z.infer<typeof createDeckSchema>;
+
+export async function createDeck(input: CreateDeckInput) {
+  const parsed = createDeckSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.flatten() };
+  }
+  const { name, description } = parsed.data;
+  await db.insert(decks).values({ name, description, userId: "..." });
+  return { success: true };
+}
+```
+
+```typescript
+// ❌ BAD – FormData as type, no Zod
+export async function createDeck(formData: FormData) {
+  const name = formData.get("name") as string;
+  await db.insert(decks).values({ name, userId: "..." });
+}
+```
+
+```typescript
+// ❌ BAD – client component fetching data
+"use client";
+export function DecksList() {
+  const [decks, setDecks] = useState([]);
+  useEffect(() => {
+    fetch("/api/decks").then((r) => r.json()).then(setDecks);
+  }, []);
+  return <ul>...</ul>;
+}
+```
+
+## Summary
+
+| Concern        | Approach           | Do not use                    |
+|----------------|--------------------|-------------------------------|
+| Read data      | Server components  | Client-side fetch for initial data |
+| Insert/Update/Delete | Server actions | API routes or client DB calls |
+| Validation     | Zod                | Manual checks, other libs     |
+| Action params  | Typed object + Zod | `FormData` as the type        |

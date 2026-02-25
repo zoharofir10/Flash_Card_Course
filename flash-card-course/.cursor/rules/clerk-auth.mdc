@@ -1,0 +1,50 @@
+---
+description: Clerk auth and user-scoped data access
+alwaysApply: true
+---
+
+# Clerk Auth & User Data Access
+
+All authentication is handled by **Clerk**. Users must only access their own data; never allow access to data that does not belong to the authenticated user.
+
+## Rules
+
+- **Auth only via Clerk**: Use Clerk for sign-in, sign-up, session, and user identity. Do not introduce other auth providers or custom auth.
+- **Resolve identity server-side**: In API routes, Server Actions, and server code, get the current user with `auth()` from `@clerk/nextjs/server` (or the appropriate Clerk server API). Do not trust client-provided user IDs for authorization.
+- **Scope all data by user**: When reading or mutating user-owned resources (decks, cards, etc.), always filter or constrain by the authenticated user’s ID (e.g. `userId` from `auth().userId`). Never return or update rows that belong to another user.
+- **Validate ownership on mutations**: Before update/delete, verify the resource belongs to the current user (e.g. `where(eq(decks.userId, userId))` and check that a row was affected).
+
+## Examples
+
+```typescript
+// ✅ GOOD – get user server-side, scope query
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { decks } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+export async function getMyDecks() {
+  const { userId } = await auth();
+  if (!userId) return [];
+  return db.select().from(decks).where(eq(decks.userId, userId));
+}
+```
+
+```typescript
+// ✅ GOOD – verify ownership before delete
+const { userId } = await auth();
+if (!userId) throw new Error("Unauthorized");
+const [deleted] = await db.delete(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId))).returning();
+if (!deleted) throw new Error("Not found or access denied");
+```
+
+```typescript
+// ❌ BAD – trusting client-provided userId
+const { userId } = await request.json(); // Never use for authorization
+
+// ❌ BAD – no user filter (leaks all users’ data)
+const allDecks = await db.select().from(decks);
+
+// ❌ BAD – updating by id only (could change another user’s row)
+await db.update(decks).set({ name }).where(eq(decks.id, deckId));
+```

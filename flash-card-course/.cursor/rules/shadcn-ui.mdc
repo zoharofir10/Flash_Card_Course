@@ -1,0 +1,48 @@
+---
+alwaysApply: true
+---
+# shadcn UI Standards
+
+This project uses **shadcn UI** for all UI elements.
+
+## Initialization
+
+If shadcn UI is not initialized in the project:
+
+```bash
+npx shadcn@latest init
+```
+
+## Adding Components
+
+To install a specific component (example with button):
+
+```bash
+npx shadcn@latest add button
+```
+
+## Usage Guidelines
+
+- ✅ Use shadcn UI components for all UI elements
+- ✅ Install missing components using `npx shadcn@latest add <component-name>`
+- ✅ Check if component exists before installing
+- ❌ Don't create custom UI components when shadcn provides them
+
+## Common Components
+
+```bash
+# Forms
+npx shadcn@latest add button
+npx shadcn@latest add input
+npx shadcn@latest add form
+npx shadcn@latest add select
+
+# Layout
+npx shadcn@latest add card
+npx shadcn@latest add dialog
+npx shadcn@latest add sheet
+
+# Feedback
+npx shadcn@latest add toast
+npx shadcn@latest add alert
+```
