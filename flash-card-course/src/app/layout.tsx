@@ -25,6 +25,7 @@ export default function RootLayout({
     <ClerkProvider
       appearance={{
         baseTheme: undefined,
+        cssLayerName: "clerk",
         variables: {
           colorBackground: "#1a1a1a",
           colorText: "#ffffff",
@@ -43,22 +44,26 @@ export default function RootLayout({
           formFieldInput: "bg-[#2a2a2a] text-white border-gray-700",
           identityPreviewText: "text-white",
           identityPreviewEditButton: "text-blue-400",
+          // UserButton dropdown (manage account / sign out)
+          userButtonPopoverCard: "bg-[#2a2a2a] border border-gray-700",
+          userButtonPopoverMain: "text-white",
+          userButtonPopoverActionButton: "text-white hover:bg-[#3a3a3a]",
         },
       }}
     >
       <html lang="en" className="dark">
         <body className="antialiased">
-          <header className="flex justify-between items-center p-4 border-b">
+          <header className="relative z-10 flex justify-between items-center p-4 border-b bg-background">
             <div className="font-bold text-xl">Flashy Cardy Course</div>
             <div className="flex gap-4 items-center">
               <SignedOut>
                 <SignInButton mode="modal">
-                  <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">
+                  <button type="button" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors cursor-pointer">
                     Sign In
                   </button>
                 </SignInButton>
                 <SignUpButton mode="modal">
-                  <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors">
+                  <button type="button" className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors cursor-pointer">
                     Sign Up
                   </button>
                 </SignUpButton>
